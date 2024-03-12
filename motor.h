@@ -60,8 +60,12 @@ public:
       b = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
     }
 
-    *encoderL = (int) a * encLDirection;
-    *encoderR = (int) b * encRDirection;
+    // Print out a and b
+    Serial.printf("a: %d\t", a);
+    Serial.printf("b: %d\n", b);
+
+    *encoderL = a * encLDirection;
+    *encoderR = b * encRDirection;
   }
 
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255)
