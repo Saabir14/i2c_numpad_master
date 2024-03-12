@@ -61,8 +61,8 @@ public:
     }
 
     // Print out a and b
-    Serial.printf("a: %d\t", a);
-    Serial.printf("b: %d\n", b);
+    // Serial.printf("a: %d\t", a);
+    // Serial.printf("b: %d\n", b);
 
     *encoderL = a * encLDirection;
     *encoderR = b * encRDirection;
