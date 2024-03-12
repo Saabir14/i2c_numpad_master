@@ -40,9 +40,9 @@ public:
 
   void getEncoderValues(int *encoderL, int *encoderR)
   {
+    int16_t a, b;
+
     // two 16-bit integer values are requested from the slave
-    int16_t a = 0;
-    int16_t b = 0;
     uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
     uint8_t a16_9 = Wire.read();  // receive bits 16 to 9 of a (one byte)
     uint8_t a8_1 = Wire.read();   // receive bits 8 to 1 of a (one byte)
@@ -51,22 +51,22 @@ public:
 
     if (!invert)
     {
-      *encoderL = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
-      *encoderR = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
+      a = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
+      b = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
     }
     else
     {
-      *encoderL = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
-      *encoderR = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
+      a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
+      b = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
     }
 
-    *encoderL *= encLDirection;
-    *encoderR *= encRDirection;
+    *encoderL = (int) a * encLDirection;
+    *encoderR = (int) b * encRDirection;
   }
 
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255)
   {
-    if (!distancePerEncCount)
+    if (!distancePerEncCount || !distance)
     {
       return;
     }
@@ -74,9 +74,9 @@ public:
     int el, er;
     getEncoderValues(&el, &er);
     int encoderTarget = distance / distancePerEncCount + (el + er) / 2;
+    setMotorSteer(steering, motorL, motorR);
     while (((el + er) / 2) < encoderTarget)
     {
-      setMotorSteer(steering, motorL, motorR);
       getEncoderValues(&el, &er);
     }
     setMotorSteer(0, 0, 0);
