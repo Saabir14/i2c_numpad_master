@@ -11,15 +11,15 @@ int er = 0;
 void setup()
 {
   Serial.begin(9600);
-  // motorController.setEncodeDirection(1, -1, true);
+  motorController.setEncodeDirection(1, -1, true);
+  motorController.setMotorDirection(-1, 1, false);
   // motorController.setDistancePerEncCount(4.385139);
-
-  motorController.setMotorSteer(0, 255, 255);
   // motorController.moveForward(100);
 }
 
 void loop()
 {
+  motorController.setMotorSteer(0, 255, 255);
   motorController.getEncoderValues(&el, &er);
   Serial.printf("El: %d\t", el);
   Serial.printf("Er: %d\n", er);

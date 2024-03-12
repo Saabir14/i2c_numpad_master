@@ -12,30 +12,41 @@ public:
   int maxL;
   int maxR;
 
-  int encLDirection = 1, encRDirection = 1;
-  bool invert = false;
+  int lEncoderDirection = 1, rEncoderDirection = 1;
+  bool invertEncoder = false;
 
-  double distancePerEncCount = 0;
+  int lMotorDirection = 1, rMotorDirection = 1;
+  bool invertMotor = false;
+
+  double dPEC = 0;
 
   
 
   MotorController(int slaveAddr, int offset = 0, int maxL = -75, int maxR = 75)
   {
+    // Set up the I2C communication incase it is not setup in main code (so people don't have to in main code)
+    Wire.begin();
     I2C_SLAVE_ADDR = slaveAddr;
     this->offset = offset;
     this->maxL = maxL;
     this->maxR = maxR;
   }
 
+  void setMotorDirection(int L, int R, bool invert = false)
+  {
+    lMotorDirection = L, rMotorDirection = R;
+    invertMotor = invert;
+  }
+
   void setEncodeDirection(int L, int R, bool invert = false)
   {
-    encLDirection = L, encRDirection = R;
-    this->invert = invert;
+    lEncoderDirection = L, rEncoderDirection = R;
+    invertEncoder = invert;
   }
 
   void setDistancePerEncCount(double distancePerEncCount)
   {
-    this->distancePerEncCount = distancePerEncCount;
+    this->dPEC = distancePerEncCount;
   }
 
   void getEncoderValues(int *encoderL, int *encoderR)
@@ -49,7 +60,7 @@ public:
     uint8_t b16_9 = Wire.read();   // receive bits 16 to 9 of b (one byte)
     uint8_t b8_1 = Wire.read();   // receive bits 8 to 1 of b (one byte)
 
-    if (!invert)
+    if (!invertEncoder)
     {
       a = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
       b = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
@@ -64,20 +75,20 @@ public:
     // Serial.printf("a: %d\t", a);
     // Serial.printf("b: %d\n", b);
 
-    *encoderL = a * encLDirection;
-    *encoderR = b * encRDirection;
+    *encoderL = a * lEncoderDirection;
+    *encoderR = b * rEncoderDirection;
   }
 
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255)
   {
-    if (!distancePerEncCount || !distance)
+    if (!dPEC || !distance)
     {
       return;
     }
 
     int el, er;
     getEncoderValues(&el, &er);
-    int encoderTarget = distance / distancePerEncCount + (el + er) / 2;
+    int encoderTarget = distance / dPEC + (el + er) / 2;
     setMotorSteer(steering, motorL, motorR);
     while (((el + er) / 2) < encoderTarget)
     {
