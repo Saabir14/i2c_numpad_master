@@ -21,7 +21,7 @@ void setup()
 void loop()
 {
   motorController.getEncoderValues(&el, &er);
-  Serial.printf("El: %d\n", el);
+  Serial.printf("El: %d\t", el);
   Serial.printf("Er: %d\n", er);
   delay(250);
 }
