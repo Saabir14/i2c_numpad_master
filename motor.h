@@ -29,22 +29,34 @@ public:
     this->maxR = maxR;
   }
 
-  void setMotorDirection(int L, int R, bool invert = false)
+  int setMotorDirection(int L, int R, bool invert = false)
   {
+    if (L != 1 || L != -1 || R != 1 || R != -1)
+      return -1;
+
     lMotorDirection = L, rMotorDirection = R;
     invertMotor = invert;
+    return 0;
   }
 
-  void setEncodeDirection(int L, int R, bool invert = false)
+  int setEncodeDirection(int L, int R, bool invert = false)
   {
+    if (L != 1 || L != -1 || R != 1 || R != -1)
+      return -1;
+
     lEncDirection = L, rEncDirection = R;
     invertEncoder = invert;
+    return 0;
   }
 
-  void setDistancePerEncCount(double L, double R)
+  int setDistancePerEncCount(double L, double R)
   {
+    if (!L || !R)
+      return -1;
+
     lMotorDistancePerEncCount = L;
     rMotorDistancePerEncCount = R;
+    return -0;
   }
 
   int moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
@@ -54,13 +66,12 @@ public:
 
     if (!distance)
       return 0;
-    Serial.printf("distance: %d\n", distance);
 
     static int el, er;
     getEncoderValues(&el, &er);
-
+    
     static int currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
-    static int targetDistance = distance + int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
+    static int targetDistance = distance + currentDistance;
     Serial.printf("target: %d\n", targetDistance);
 
     setMotorSteer(steering, motorL, motorR);
@@ -68,7 +79,6 @@ public:
     {
       getEncoderValues(&el, &er);
       currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
-      Serial.printf("distance: %d\t", distance + currentDistance);
     }
     while (distance + currentDistance < targetDistance);
     if (brakeAtEnd)
