@@ -105,6 +105,11 @@ public:
   void setMotorSteer(int steering = 0, int motorL = 255, int motorR = 255)
   {
     steering += offset;
+    if (steering > maxR)
+      steering = maxR;
+    else if (steering < maxL)
+      steering = maxL;
+
     motorL = motorL * lMotorDirection;
     motorR = motorR * rMotorDirection;
 
