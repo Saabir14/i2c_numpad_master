@@ -15,8 +15,8 @@ void setup()
   motorController.setMotorDirection(-1, 1, false);
   motorController.setDistancePerEncCount(leftMotorDistancePerCount, rightMotorDistancePerCount);
 
-  motorController.setMotorSteer();
-  // motorController.moveForward(100);
+  // motorController.setMotorSteer();
+  motorController.moveForward(100);
 }
 
 void loop()
@@ -24,7 +24,7 @@ void loop()
   static int el = 0;
   static int er = 0;
   motorController.getEncoderValues(&el, &er);
-  Serial.printf("El: %d\t", el);
-  Serial.printf("Er: %d\n", er);
+  // Serial.printf("El: %d\t", el);
+  // Serial.printf("Er: %d\n", er);
   delay(500);
 }

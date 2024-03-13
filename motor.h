@@ -92,8 +92,6 @@ public:
     do
     {
       getEncoderValues(&el, &er);
-      Serial.printf("El: %d\t", el);
-      Serial.printf("Er: %d\n", er);
     }
     while ((el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) / 2 < targetDistance);
     if (brakeAtEnd)
