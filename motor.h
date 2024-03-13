@@ -1,6 +1,5 @@
 // By Saabir Ahmed Parvaiz Ahmed (2024-2-11)
 // This code is used to control the motors and read the encoder values of the car
-
 #include <Wire.h>
 
 // Define the MotorController class
@@ -12,13 +11,13 @@ public:
   int maxL;
   int maxR;
 
-  int lEncDirection = 1, rEncDirection = 1;
-  bool invertEncoder = false;
-
   int lMotorDirection = 1, rMotorDirection = 1;
   bool invertMotor = false;
 
-  double lMotorDistancePerEncCount = 0, rMotorDistancePerEncCount = 0;  
+  int lEncDirection = 1, rEncDirection = 1;
+  bool invertEncoder = false;
+
+  double lMotorDistancePerEncCount = 0, rMotorDistancePerEncCount = 0;
 
   MotorController(int slaveAddr, int offset = 0, int maxL = -75, int maxR = 75)
   {
@@ -50,7 +49,7 @@ public:
 
   void getEncoderValues(int *encoderL, int *encoderR)
   {
-    int16_t a, b;
+    static int16_t a, b;
 
     // two 16-bit integer values are requested from the slave
     uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
@@ -78,28 +77,36 @@ public:
     *encoderR = b * rEncDirection;
   }
 
-  void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255)
+  int moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
   {
-    if (!lMotorDistancePerEncCount || !distance)
-    {
-      return;
-    }
+    if (!lMotorDistancePerEncCount)
+      return -1;
 
-    int el, er;
+    if (!distance)
+      return 0;
+
+    static int el, er;
     getEncoderValues(&el, &er);
-    int encoderTarget = (int(distance / lMotorDistancePerEncCount) + int(distance / rMotorDistancePerEncCount) + el + er) >> 1;
+    int targetDistance = distance + ((el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) / 2);
     setMotorSteer(steering, motorL, motorR);
     do
     {
       getEncoderValues(&el, &er);
+      Serial.printf("El: %d\t", el);
+      Serial.printf("Er: %d\n", er);
     }
-    while (((el + er) >> 1) < encoderTarget);
-    setMotorSteer(0, 0, 0);
+    while ((el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) / 2 < targetDistance);
+    if (brakeAtEnd)
+      setMotorSteer(0, 0, 0);
+
+    return 0;
   }
 
   void setMotorSteer(int steering = 0, int motorL = 255, int motorR = 255)
   {
     steering += offset;
+    motorL = motorL * lMotorDirection;
+    motorR = motorR * rMotorDirection;
 
     Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device #4
     /* depending on the microcontroller, the int variable is stored as 32-bits or 16-bits
