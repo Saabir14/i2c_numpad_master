@@ -47,36 +47,6 @@ public:
     rMotorDistancePerEncCount = R;
   }
 
-  void getEncoderValues(int *encoderL, int *encoderR)
-  {
-    static int16_t a, b;
-
-    // two 16-bit integer values are requested from the slave
-    uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
-    uint8_t a16_9 = Wire.read();  // receive bits 16 to 9 of a (one byte)
-    uint8_t a8_1 = Wire.read();   // receive bits 8 to 1 of a (one byte)
-    uint8_t b16_9 = Wire.read();   // receive bits 16 to 9 of b (one byte)
-    uint8_t b8_1 = Wire.read();   // receive bits 8 to 1 of b (one byte)
-
-    if (!invertEncoder)
-    {
-      a = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
-      b = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
-    }
-    else
-    {
-      a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
-      b = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
-    }
-
-    // Print out a and b
-    // Serial.printf("a: %d\t", a);
-    // Serial.printf("b: %d\n", b);
-
-    *encoderL = a * lEncDirection;
-    *encoderR = b * rEncDirection;
-  }
-
   int moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
   {
     if (!lMotorDistancePerEncCount)
@@ -84,16 +54,23 @@ public:
 
     if (!distance)
       return 0;
+    Serial.printf("distance: %d\n", distance);
 
     static int el, er;
     getEncoderValues(&el, &er);
-    int targetDistance = distance + ((el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) / 2);
+
+    static int currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
+    static int targetDistance = distance + int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
+    Serial.printf("target: %d\n", targetDistance);
+
     setMotorSteer(steering, motorL, motorR);
     do
     {
       getEncoderValues(&el, &er);
+      currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
+      Serial.printf("distance: %d\t", distance + currentDistance);
     }
-    while ((el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) / 2 < targetDistance);
+    while (distance + currentDistance < targetDistance);
     if (brakeAtEnd)
       setMotorSteer(0, 0, 0);
 
@@ -132,5 +109,35 @@ public:
     Wire.write((byte)((steering & 0x0000FF00) >> 8));    // first byte of motorR, containing bits 16 to 9
     Wire.write((byte)(steering & 0x000000FF));           // second byte of motorR, containing the 8 LSB - bits 8 to 1
     Wire.endTransmission();   // stop transmitting  }
+  }
+
+  void getEncoderValues(int *encoderL, int *encoderR)
+  {
+    static int16_t a, b;
+
+    // two 16-bit integer values are requested from the slave
+    static uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
+    static uint8_t a16_9 = Wire.read();  // receive bits 16 to 9 of a (one byte)
+    static uint8_t a8_1 = Wire.read();   // receive bits 8 to 1 of a (one byte)
+    static uint8_t b16_9 = Wire.read();   // receive bits 16 to 9 of b (one byte)
+    static uint8_t b8_1 = Wire.read();   // receive bits 8 to 1 of b (one byte)
+
+    if (!invertEncoder)
+    {
+      a = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
+      b = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
+    }
+    else
+    {
+      a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
+      b = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
+    }
+
+    // Print out a and b
+    // Serial.printf("a: %d\t", a);
+    // Serial.printf("b: %d\n", b);
+
+    *encoderL = a * lEncDirection;
+    *encoderR = b * rEncDirection;
   }
 };

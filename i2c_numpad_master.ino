@@ -15,6 +15,8 @@ void setup()
   motorController.setMotorDirection(-1, 1, false);
   motorController.setDistancePerEncCount(leftMotorDistancePerCount, rightMotorDistancePerCount);
 
+  delay(5000);
+
   // motorController.setMotorSteer();
   motorController.moveForward(100);
 }
