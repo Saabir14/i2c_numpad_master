@@ -12,15 +12,13 @@ public:
   int maxL;
   int maxR;
 
-  int lEncoderDirection = 1, rEncoderDirection = 1;
+  int lEncDirection = 1, rEncDirection = 1;
   bool invertEncoder = false;
 
   int lMotorDirection = 1, rMotorDirection = 1;
   bool invertMotor = false;
 
-  double dPEC = 0;
-
-  
+  double lMotorDistancePerEncCount = 0, rMotorDistancePerEncCount = 0;  
 
   MotorController(int slaveAddr, int offset = 0, int maxL = -75, int maxR = 75)
   {
@@ -40,13 +38,14 @@ public:
 
   void setEncodeDirection(int L, int R, bool invert = false)
   {
-    lEncoderDirection = L, rEncoderDirection = R;
+    lEncDirection = L, rEncDirection = R;
     invertEncoder = invert;
   }
 
-  void setDistancePerEncCount(double distancePerEncCount)
+  void setDistancePerEncCount(double L, double R)
   {
-    this->dPEC = distancePerEncCount;
+    lMotorDistancePerEncCount = L;
+    rMotorDistancePerEncCount = R;
   }
 
   void getEncoderValues(int *encoderL, int *encoderR)
@@ -75,25 +74,26 @@ public:
     // Serial.printf("a: %d\t", a);
     // Serial.printf("b: %d\n", b);
 
-    *encoderL = a * lEncoderDirection;
-    *encoderR = b * rEncoderDirection;
+    *encoderL = a * lEncDirection;
+    *encoderR = b * rEncDirection;
   }
 
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255)
   {
-    if (!dPEC || !distance)
+    if (!lMotorDistancePerEncCount || !distance)
     {
       return;
     }
 
     int el, er;
     getEncoderValues(&el, &er);
-    int encoderTarget = distance / dPEC + (el + er) / 2;
+    int encoderTarget = (int(distance / lMotorDistancePerEncCount) + int(distance / rMotorDistancePerEncCount) + el + er) >> 1;
     setMotorSteer(steering, motorL, motorR);
-    while (((el + er) / 2) < encoderTarget)
+    do
     {
       getEncoderValues(&el, &er);
     }
+    while (((el + er) >> 1) < encoderTarget);
     setMotorSteer(0, 0, 0);
   }
 

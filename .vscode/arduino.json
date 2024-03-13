@@ -2,6 +2,6 @@
     "configuration": "FlashFreq=80,UploadSpeed=921600,DebugLevel=none,EraseFlash=none",
     "board": "esp32:esp32:esp32doit-devkit-v1",
     "sketch": "i2c_numpad_master.ino",
-    "port": "/dev/tty.usbserial-210",
+    "port": "/dev/tty.usbserial-10",
     "programmer": "esptool"
 }
