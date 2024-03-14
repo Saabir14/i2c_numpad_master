@@ -10,23 +10,23 @@ MotorController motorController(I2C_SLAVE_ADDR, -32);
 void setup()
 {
   Serial.begin(9600);
+  Wire.begin();
 
   motorController.setEncodeDirection(1, -1, true);
   motorController.setMotorDirection(-1, 1, false);
   motorController.setDistancePerEncCount(leftMotorDistancePerCount, rightMotorDistancePerCount);
 
-  delay(5000);
-
   // motorController.setMotorSteer();
-  motorController.moveForward(100);
+  motorController.moveForward(500);
 }
 
 void loop()
 {
-  static int el = 0;
-  static int er = 0;
-  motorController.getEncoderValues(&el, &er);
-  // Serial.printf("El: %d\t", el);
-  // Serial.printf("Er: %d\n", er);
-  delay(500);
+  int encL, encR;
+  motorController.getEncoderCount(&encL, &encR);
+  Serial.print("Left: ");
+  Serial.print(encL);
+  Serial.print("\tRight: ");
+  Serial.println(encR);
+  delay(1000);
 }

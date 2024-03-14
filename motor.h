@@ -29,29 +29,21 @@ public:
     this->maxR = maxR;
   }
 
-  int setMotorDirection(int L, int R, bool invert = false)
+  void setMotorDirection(int L, int R, bool invert = false)
   {
-    if (L != 1 || L != -1 || R != 1 || R != -1)
-      return -1;
-
     lMotorDirection = L, rMotorDirection = R;
     invertMotor = invert;
-    return 0;
   }
 
-  int setEncodeDirection(int L, int R, bool invert = false)
+  void setEncodeDirection(int L, int R, bool invert = false)
   {
-    if (L != 1 || L != -1 || R != 1 || R != -1)
-      return -1;
-
     lEncDirection = L, rEncDirection = R;
     invertEncoder = invert;
-    return 0;
   }
 
   int setDistancePerEncCount(double L, double R)
   {
-    if (!L || !R)
+    if (L <= 0 || R <= 0)
       return -1;
 
     lMotorDistancePerEncCount = L;
@@ -59,44 +51,49 @@ public:
     return -0;
   }
 
-  int moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
+  void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
   {
     if (!lMotorDistancePerEncCount)
-      return -1;
+      return;
 
     if (!distance)
-      return 0;
+      return;
 
-    static int el, er;
-    getEncoderValues(&el, &er);
-    
-    static int currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
-    static int targetDistance = distance + currentDistance;
-    Serial.printf("target: %d\n", targetDistance);
+    int encL, encR;
+    getEncoderCount(&encL, &encR);
+    const int startEncL = encL, startEncR = encR;
+
+    int currentCountL, currentCountR;
 
     setMotorSteer(steering, motorL, motorR);
+
     do
     {
-      getEncoderValues(&el, &er);
-      currentDistance = int(el * lMotorDistancePerEncCount + er * rMotorDistancePerEncCount) >> 1;
-    }
-    while (distance + currentDistance < targetDistance);
-    if (brakeAtEnd)
-      setMotorSteer(0, 0, 0);
+      getEncoderCount(&encL, &encR);
+      currentCountL = encL - startEncL;
+      currentCountR = encR - startEncR;
+    } while (currentCountL * lMotorDistancePerEncCount + currentCountR * rMotorDistancePerEncCount < distance << 1);
 
-    return 0;
+    Serial.print("Done moving forward\n");
+
+    if (brakeAtEnd)
+      Serial.print("Braking\n");
+      setMotorSteer(0, 0, 0);
   }
 
   void setMotorSteer(int steering = 0, int motorL = 255, int motorR = 255)
   {
+    // Add offset before applying the steering
     steering += offset;
+    // Do not exceed boundaries for steering
     if (steering > maxR)
       steering = maxR;
     else if (steering < maxL)
       steering = maxL;
 
-    motorL = motorL * lMotorDirection;
-    motorR = motorR * rMotorDirection;
+    // Multiply by direction to fix issue where motors could move the wrong direction
+    motorL *= lMotorDirection;
+    motorR *= rMotorDirection;
 
     Wire.beginTransmission(I2C_SLAVE_ADDR); // transmit to device #4
     /* depending on the microcontroller, the int variable is stored as 32-bits or 16-bits
@@ -121,16 +118,16 @@ public:
     Wire.endTransmission();   // stop transmitting  }
   }
 
-  void getEncoderValues(int *encoderL, int *encoderR)
+  void getEncoderCount(int *encoderL, int *encoderR)
   {
-    static int16_t a, b;
+    int16_t a, b;
 
     // two 16-bit integer values are requested from the slave
-    static uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
-    static uint8_t a16_9 = Wire.read();  // receive bits 16 to 9 of a (one byte)
-    static uint8_t a8_1 = Wire.read();   // receive bits 8 to 1 of a (one byte)
-    static uint8_t b16_9 = Wire.read();   // receive bits 16 to 9 of b (one byte)
-    static uint8_t b8_1 = Wire.read();   // receive bits 8 to 1 of b (one byte)
+    const uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4);  // 4 indicates the number of bytes that are expected
+    const uint8_t a16_9 = Wire.read();  // receive bits 16 to 9 of a (one byte)
+    const uint8_t a8_1 = Wire.read();   // receive bits 8 to 1 of a (one byte)
+    const uint8_t b16_9 = Wire.read();   // receive bits 16 to 9 of b (one byte)
+    const uint8_t b8_1 = Wire.read();   // receive bits 8 to 1 of b (one byte)
 
     if (!invertEncoder)
     {
@@ -139,8 +136,8 @@ public:
     }
     else
     {
-      a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
       b = (a16_9 << 8) | a8_1; // combine the two bytes into a 16 bit number
+      a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
     }
 
     // Print out a and b
