@@ -22,11 +22,4 @@ void setup()
 
 void loop()
 {
-  int encL, encR;
-  motorController.getEncoderCount(&encL, &encR);
-  Serial.print("Left: ");
-  Serial.print(encL);
-  Serial.print("\tRight: ");
-  Serial.println(encR);
-  delay(1000);
 }

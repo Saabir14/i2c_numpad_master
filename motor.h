@@ -1,8 +1,8 @@
-// By Saabir Ahmed Parvaiz Ahmed (2024-2-11)
+// By Saabir Ahmed Parvaiz Ahmed (2024-3-14)
 // This code is used to control the motors and read the encoder values of the car
 #include <Wire.h>
 
-// Define the MotorController class
+/// @brief Class to control the motors and read the encoder values of the car using I2C
 class MotorController {
 public:
   // This is the address of the slave device
@@ -19,6 +19,11 @@ public:
 
   double lMotorDistancePerEncCount = 0, rMotorDistancePerEncCount = 0;
 
+  /// @brief Function to initialize the MotorController
+  /// @param slaveAddr Address of the slave device
+  /// @param offset Offset to add to the steering value
+  /// @param maxL Maximum value for left turning of steering motor
+  /// @param maxR Maximum value for right turning of steering motor
   MotorController(int slaveAddr, int offset = 0, int maxL = -75, int maxR = 75)
   {
     // Set up the I2C communication incase it is not setup in main code (so people don't have to in main code)
@@ -29,18 +34,30 @@ public:
     this->maxR = maxR;
   }
 
+  /// @brief Function to set the motor direction. Can be used to invert motor values if L and R value is not (1 or -1) for advanced uses
+  /// @param L Direction of left motor
+  /// @param R Direction of right motor
+  /// @param invert Flag that indicates if the motor values should be inverted (right motor is left and vice versa)
   void setMotorDirection(int L, int R, bool invert = false)
   {
     lMotorDirection = L, rMotorDirection = R;
     invertMotor = invert;
   }
 
+  /// @brief Function to set the encoder direction. Can be used to scale encoder values if L and R value is not (1 or -1) for advanced uses. Better to use setDistancePerEncCount() instead for scaling
+  /// @param L Direction of left encoder
+  /// @param R Direction of right encoder
+  /// @param invert Flag that indicates if the encoder values should be inverted (right encoder is left and vice versa)
   void setEncodeDirection(int L, int R, bool invert = false)
   {
     lEncDirection = L, rEncDirection = R;
     invertEncoder = invert;
   }
 
+  /// @brief Function to set the distance per encoder count
+  /// @param L Distance per encoder count for left encoder
+  /// @param R Distance per encoder count for right encoder
+  /// @return Returns 0 if successful, -1 if unsuccessful
   int setDistancePerEncCount(double L, double R)
   {
     if (L <= 0 || R <= 0)
@@ -48,9 +65,15 @@ public:
 
     lMotorDistancePerEncCount = L;
     rMotorDistancePerEncCount = R;
-    return -0;
+    return 0;
   }
 
+  /// @brief Function to move the car forward for a certain distance
+  /// @param distance distance to move forward in mm
+  /// @param steering steering value (not angle)
+  /// @param motorL power to left motor
+  /// @param motorR power to right motor
+  /// @param brakeAtEnd flag to brake at end
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
   {
     if (!lMotorDistancePerEncCount)
@@ -74,13 +97,17 @@ public:
       currentCountR = encR - startEncR;
     } while (currentCountL * lMotorDistancePerEncCount + currentCountR * rMotorDistancePerEncCount < distance << 1);
 
-    Serial.print("Done moving forward\n");
+    // Serial.print("Done moving forward\n");
 
     if (brakeAtEnd)
-      Serial.print("Braking\n");
+      // Serial.print("Braking\n");
       setMotorSteer(0, 0, 0);
   }
 
+  /// @brief Function to set the motor speed and steering
+  /// @param steering 
+  /// @param motorL 
+  /// @param motorR 
   void setMotorSteer(int steering = 0, int motorL = 255, int motorR = 255)
   {
     // Add offset before applying the steering
@@ -116,8 +143,18 @@ public:
     Wire.write((byte)((steering & 0x0000FF00) >> 8));    // first byte of motorR, containing bits 16 to 9
     Wire.write((byte)(steering & 0x000000FF));           // second byte of motorR, containing the 8 LSB - bits 8 to 1
     Wire.endTransmission();   // stop transmitting  }
+
+    // Serial.print("MotorL: ");
+    // Serial.print(motorL);
+    // Serial.print("\tMotorR: ");
+    // Serial.print(motorR);
+    // Serial.print("\tSteering: ");
+    // Serial.println(steering);
   }
 
+  /// @brief function to get the encoder count from the slave
+  /// @param encoderL 
+  /// @param encoderR 
   void getEncoderCount(int *encoderL, int *encoderR)
   {
     int16_t a, b;
