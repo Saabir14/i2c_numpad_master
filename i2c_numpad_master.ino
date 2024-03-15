@@ -163,23 +163,27 @@ void executeCommands()
       // Commands usable hear, argument is the command type and value is the distance or angle
       value *= 100; // Convert to mm
 
-      if (argument == 'F')
-      {
-        motorController.moveForward(value);
-      }
-      else if (argument == 'L')
-      {
-        motorController.turnDeg(value, lLowTurnPwr, lHighTurnPwr, lTurnFrictionCorrection);
-      }
-      else if (argument == 'R')
-      {
-        motorController.turnDeg(-value, rHighTurnPwr, rLowTurnPwr, rTurnFrictionCorrection);
-      }
-      else if (argument == 'B')
-      {
-        motorController.moveBackward(value);
-      }
+      Serial.printf("Argument: %c, Value: %d\n", argument, value);
 
+      switch (argument)
+      {
+      case 'F':
+        motorController.moveForward(value);
+        Serial.printf("Moving forward by %d mm\n", value);
+        break;
+      case 'L':
+        motorController.turnDeg(value, lLowTurnPwr, lHighTurnPwr, lTurnFrictionCorrection);
+        Serial.printf("Turning left by %d degrees\n", value);
+        break;
+      case 'r':
+        motorController.turnDeg(-value, rHighTurnPwr, rLowTurnPwr, rTurnFrictionCorrection);
+        Serial.printf("Turning right by %d degrees\n", value);
+        break;
+      case 'B':
+        motorController.moveBackward(value);
+        Serial.printf("Moving backward by %d mm\n", value);
+        break;
+      }
       command = strtok(NULL, " ");
     }
 
