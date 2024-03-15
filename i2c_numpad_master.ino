@@ -1,4 +1,5 @@
 #include <Keypad.h>
+#include <LiquidCrystal.h>
 #include "motor.h"
 
 #define I2C_SLAVE_ADDR 0x04 // Slave address
@@ -36,11 +37,20 @@ const int rHighTurnPwr = 176, rLowTurnPwr = 163, rTurnFrictionCorrection = 1;
 const int lHighTurnPwr = 160, lLowTurnPwr = 170, lTurnFrictionCorrection = 0.67;
 const int wheelBase = 147;
 
+// initialize the library with the numbers of the interface pins
+const int RS = 32, EN = 33, D4 = 25, D5 = 26, D6 = 27, D7 = 14;
+LiquidCrystal lcd(RS, EN, D4, D5, D6, D7);
+
 void executeCommands();
 void processCommand();
+void menuDisplay();
+int getDistance();
 
 void setup()
 {
+  // set up the LCD's number of columns and rows:
+  lcd.begin(16, 2);
+
   delay(1000); // Wait for 1 second to let the I2C bus settle down
 
   motorController.setEncodeDirection(1, -1, true);
@@ -55,6 +65,13 @@ void setup()
 
 void loop()
 {
+  menuDisplay();
+  lcd.clear();
+  lcd.setCursor(0,0);
+  char commandHistoryChar[commandHistory.length() + 1];
+  commandHistory.toCharArray(commandHistoryChar, sizeof(commandHistoryChar));
+  lcd.print(commandHistoryChar);
+
   char key = keypad.getKey();
   if (key)
   {
@@ -219,4 +236,24 @@ void processCommand()
     commandType = ' ';
     currentState = WAIT_FOR_COMMAND;
   }
+}
+
+void menuDisplay(){
+  delay(3000);
+  lcd.clear();
+  lcd.setCursor(1,0);
+  lcd.print("Enter command");
+  lcd.setCursor(0,1);
+  lcd.print("2=F 8=B  4=L 6=R");
+}
+
+int getDistance(){
+  int dist = 0;
+  while (Serial.available()==0){}
+
+  while (dist==0){
+    dist = Serial.parseInt();
+  }
+  lcd.print(dist*10);
+  lcd.print("cm");
 }
