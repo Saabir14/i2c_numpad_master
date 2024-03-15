@@ -157,6 +157,11 @@ public:
       setMotorSteer(0, 0, 0);
   }
 
+  void moveBackward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
+  {
+    moveForward(-distance, steering, -motorL, -motorR, brakeAtEnd);
+  }
+
   /**
    * Turns the robot by a specified angle in radians.
    *
