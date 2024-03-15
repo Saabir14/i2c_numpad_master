@@ -9,6 +9,7 @@ const int wheelBase = 147;
 MotorController motorController(I2C_SLAVE_ADDR, -32);
 
 const double turnFrictionCorrection = 1.15;
+const int lowTurnSpeed = 160, highTurnSpeed = 180;
 
 void setup()
 {
@@ -22,7 +23,7 @@ void setup()
 
   // motorController.setMotorSteer();
   // motorController.moveForward(500);
-  motorController.turnRad(PI, 180, 160, turnFrictionCorrection);
+  motorController.turnRad(PI, highTurnSpeed, lowTurnSpeed, turnFrictionCorrection);
 }
 
 void loop() {}
