@@ -29,7 +29,7 @@ char commandType = ' ';
 String inputValue = "";
 String commandHistory = "";
 
-MotorController motorController(I2C_SLAVE_ADDR);
+MotorController motorController(I2C_SLAVE_ADDR, -32);
 const double leftMotorDistancePerCount = 5000 / 1082;
 const double rightMotorDistancePerCount = 5000 / 1099;
 const int rHighTurnPwr = 176, rLowTurnPwr = 163, rTurnFrictionCorrection = 1;
@@ -41,6 +41,8 @@ void processCommand();
 
 void setup()
 {
+  delay(1000); // Wait for 1 second to let the I2C bus settle down
+
   motorController.setEncodeDirection(1, -1, true);
   motorController.setMotorDirection(-1, 1, false);
   motorController.setDistancePerEncCount(leftMotorDistancePerCount, rightMotorDistancePerCount);
@@ -161,13 +163,13 @@ void executeCommands()
       Serial.println(value);
 
       // Commands usable hear, argument is the command type and value is the distance or angle
-      value *= 100; // Convert to mm
 
       Serial.printf("Argument: %c, Value: %d\n", argument, value);
 
       switch (argument)
       {
       case 'F':
+        value *= 100; // Convert to mm
         motorController.moveForward(value);
         Serial.printf("Moving forward by %d mm\n", value);
         break;
@@ -180,6 +182,7 @@ void executeCommands()
         Serial.printf("Turning right by %d degrees\n", value);
         break;
       case 'B':
+        value *= 100; // Convert to mm
         motorController.moveBackward(value);
         Serial.printf("Moving backward by %d mm\n", value);
         break;

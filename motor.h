@@ -130,16 +130,18 @@ public:
   void moveForward(int distance, int steering = 0, int motorL = 255, int motorR = 255, bool brakeAtEnd = true)
   {
     if (!lMotorDistancePerEncCount)
+      // Serial.println("distance per encoder count not set");
       return;
 
     if (!distance)
+      // Serial.println("distance is 0");
       return;
 
     int encL, encR;
     getEncoderCount(&encL, &encR);
     const int startEncL = encL, startEncR = encR;
 
-    int currentCountL, currentCountR;
+    int currentCountL, currentCountR, currentDistanceL, currentDistanceR;
 
     setMotorSteer(steering, motorL, motorR);
 
@@ -148,7 +150,10 @@ public:
       getEncoderCount(&encL, &encR);
       currentCountL = encL - startEncL;
       currentCountR = encR - startEncR;
-    } while (currentCountL * lMotorDistancePerEncCount + currentCountR * rMotorDistancePerEncCount < distance << 1);
+      currentDistanceL = currentCountL * lMotorDistancePerEncCount;
+      currentDistanceR = currentCountR * rMotorDistancePerEncCount;
+      // Serial.printf("Current Distance L: %d\tCurrent Distance R: %d\n", currentDistanceL, currentDistanceR);
+    } while (currentDistanceL + currentDistanceR < distance << 1);
 
     // Serial.print("Done moving forward\n");
 
@@ -287,13 +292,17 @@ public:
   void getEncoderCount(int *encoderL, int *encoderR)
   {
     int16_t a, b;
+    uint8_t bytesReceived;
 
-    // two 16-bit integer values are requested from the slave
-    const uint8_t bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4); // 4 indicates the number of bytes that are expected
-    const uint8_t a16_9 = Wire.read();                                 // receive bits 16 to 9 of a (one byte)
-    const uint8_t a8_1 = Wire.read();                                  // receive bits 8 to 1 of a (one byte)
-    const uint8_t b16_9 = Wire.read();                                 // receive bits 16 to 9 of b (one byte)
-    const uint8_t b8_1 = Wire.read();                                  // receive bits 8 to 1 of b (one byte)
+    // Keep requesting data until the correct number of bytes are received
+    do {
+      bytesReceived = Wire.requestFrom(I2C_SLAVE_ADDR, 4); // 4 indicates the number of bytes that are expected
+    } while (bytesReceived != 4);
+
+    const uint8_t a16_9 = Wire.read(); // receive bits 16 to 9 of a (one byte)
+    const uint8_t a8_1 = Wire.read();  // receive bits 8 to 1 of a (one byte)
+    const uint8_t b16_9 = Wire.read(); // receive bits 16 to 9 of b (one byte)
+    const uint8_t b8_1 = Wire.read();  // receive bits 8 to 1 of b (one byte)
 
     if (!invertEncoder)
     {
@@ -306,11 +315,13 @@ public:
       a = (b16_9 << 8) | b8_1; // combine the two bytes into a 16 bit number
     }
 
-    // Print out a and b
-    // Serial.printf("a: %d\t", a);
-    // Serial.printf("b: %d\n", b);
-
     *encoderL = int(a * lEncDirection);
     *encoderR = int(b * rEncDirection);
+
+    // Print out encoderL and encoderR
+    // Serial.print("encoderL: ");
+    // Serial.print(*encoderL);
+    // Serial.print("\tencoderR: ");
+    // Serial.println(*encoderR);
   }
 };
